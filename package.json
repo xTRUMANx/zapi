@@ -1,0 +1,20 @@
+{
+  "name": "zapi",
+  "version": "0.0.1",
+  "description": "Unofficial Zaad API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "zaad"
+  ],
+  "author": "Mustafa Saeed Haji Ali",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^0.18.0",
+    "debug": "^2.1.0",
+    "request": "^2.48.0",
+    "xlsjs": "^0.7.2"
+  }
+}
