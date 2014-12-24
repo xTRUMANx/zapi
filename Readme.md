@@ -109,10 +109,38 @@ arguments:
 2. The new `state`. You should save this object for subsequent requests.
 3. The current `balance` of the user's account (if the operation is successful).
 
-### getRecentTransactions(state, cb)
+### getRecentTransactions(state, cb) DEPRECATED
 
 This operation is used to fetch the user's last week's worth of transactions. Before using this operation, you will have
 had to have completed the login process (which ends with a successful call of the `submitToken` operation).
+
+The `state` argument should be the last state object received from a previous ZAPI operation or an empty object.
+
+The `cb` argument is a function that will be called when the `getRecentTransactions` operation is complete. It will get
+3 arguments:
+
+1. An `err` value if an error occurs.
+2. The new `state`. You should save this object for subsequent requests.
+3. An array of `transactions`. Each element will be object with the following properties:
+
+ - id: The transaction id
+ - date: The transaction date
+ - desc: The transaction description
+ - type: The transaction type
+ - ref: The reference of the transaction.
+ - debit: The debit value of the transaction.
+ - credit: The credit value of the transaction.
+ - balance: The balance of the transaction.
+
+The transactions are fetched from the "Account Activity" feature on the Zaad web interface.
+
+### getTransactions(fromToRange, state, cb)
+
+This operation is used to fetch the user's last week's worth of transactions. Before using this operation, you will have
+had to have completed the login process (which ends with a successful call of the `submitToken` operation).
+
+The `fromToRange` object should have `from` and `to` properties representing the date range of the transactions to
+fetch. Both properties should be dates parsable by Date.parse.
 
 The `state` argument should be the last state object received from a previous ZAPI operation or an empty object.
 

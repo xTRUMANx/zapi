@@ -229,8 +229,20 @@ var zapi = {
   getRecentTransactions: function(state, cb){
     var log = debug("zapi:getRecentTransactions");
 
+    log("This function is deprecated. Use getTransactions instead.")
+
+    var oneWeekAgo = new Date();
+    oneWeekAgo.setDate(today.getDate() - 6);
+
+    var today = new Date();
+
+    var fromToRange = {
+      from: oneWeekAgo,
+      to: today
+    };
+
     if(state.accountId) {
-      fetchRecentTransactions(state.accountId, state, cb);
+      fetchTransactions(fromToRange, state.accountId, state, cb);
     }
     else{
       fetchAccountId(state, function(err, newState, accountId){
@@ -242,7 +254,28 @@ var zapi = {
         else{
           newState.accountId = accountId;
 
-          fetchRecentTransactions(accountId, newState, cb);
+          fetchTransactions(fromToRange, accountId, newState, cb);
+        }
+      });
+    }
+  },
+  getTransactions: function(fromToRange, state, cb){
+    var log = debug("zapi:getTransactions");
+
+    if(state.accountId) {
+      fetchTransactions(fromToRange, state.accountId, state, cb);
+    }
+    else{
+      fetchAccountId(state, function(err, newState, accountId){
+        log("fetched accountId", accountId);
+
+        if(err){
+          cb(err, newState);
+        }
+        else{
+          newState.accountId = accountId;
+
+          fetchTransactions(fromToRange, accountId, newState, cb);
         }
       });
     }
@@ -447,8 +480,8 @@ function fetchAccountId(state, cb){
   });
 }
 
-function fetchRecentTransactions(accountId, state, cb) {
-  var log = debug("zapi:fetchRecentTransactions");
+function fetchTransactions(fromToRange, accountId, state, cb) {
+  var log = debug("zapi:fetchTransactions");
 
   var jar = request.jar();
 
@@ -458,12 +491,11 @@ function fetchRecentTransactions(accountId, state, cb) {
     jar.setCookie(cookie, rootPath);
   }
 
-  var today = new Date();
-  var endDate = util.format("%s%s%s", today.getFullYear(), padWithZeroes(today.getMonth() + 1, 2), padWithZeroes(today.getDate(), 2));
+  var to = fromToRange.to;
+  var endDate = util.format("%s%s%s", to.getFullYear(), padWithZeroes(to.getMonth() + 1, 2), padWithZeroes(to.getDate(), 2));
 
-  var oneWeekAgo = new Date();
-  oneWeekAgo.setDate(today.getDate() - 6);
-  var begDate = util.format("%s%s%s", oneWeekAgo.getFullYear(), padWithZeroes(oneWeekAgo.getMonth() + 1, 2), padWithZeroes(oneWeekAgo.getDate(), 2));
+  var from = fromToRange.from;
+  var begDate = util.format("%s%s%s", from.getFullYear(), padWithZeroes(from.getMonth() + 1, 2), padWithZeroes(from.getDate(), 2));
 
   var params = util.format("AccountID=%s!BegDate=%s!EndDate=%s", accountId, begDate, endDate);
 
@@ -477,7 +509,10 @@ function fetchRecentTransactions(accountId, state, cb) {
   request.get({
     url: rootPath + accountActivityPath,
     jar: jar,
-    qs: qs
+    qs: qs,
+    headers: {
+      "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0"
+    }
   }, function (err, response, body) {
     state.cookie = jar.getCookieString(rootPath);
 
@@ -488,6 +523,18 @@ function fetchRecentTransactions(accountId, state, cb) {
 
     if (sessionTimedOut(response)) {
       return cb("Session timed out", state);
+    }
+
+    if (response.statusCode === 500) {
+      log("response.statusCode was 500");
+
+      return cb(null, state, []);
+    }
+
+    if(response.body.substring(88, 101) === "No Data found"){
+      log("No Data Found.");
+
+      return cb(null, state, []);
     }
 
     var $ = cheerio.load(body);
